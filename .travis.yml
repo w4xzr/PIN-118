@@ -1,0 +1,31 @@
+dist: bionic
+language: generic
+before_install:
+- |
+  echo "Checking if a CI run is needed post commit: ${TRAVIS_COMMIT_RANGE}"
+  if ! git diff --name-only ${TRAVIS_COMMIT_RANGE} | grep -qvE '(\.png$)|(\.pdf$)|(\.html$)|^(LICENSE)'
+  then
+    echo "Only doc files were updated, not running the CI."
+    exit
+  fi
+- sudo add-apt-repository --yes ppa:js-reynaud/kicad-5.1
+- sudo apt update -y
+- sudo apt install --no-install-recommends -y kicad kicad-symbols kicad-templates
+  kicad-footprints inkscape
+script:
+- cd scripts && ./pcb2svg.sh && cd ..
+before_deploy:
+- git config --local user.name "PCB Gerber Exporter"
+- git config --local user.email "noreply@w4xzr.xyz"
+- export TRAVIS_TAG=${TRAVIS_TAG:-$(date +'%Y%m%d%H%M%S')-$(git log --format=%h -1)}
+- git tag $TRAVIS_TAG
+- ls
+- ls Gerbers/
+deploy:
+  provider: releases
+  api_key:
+    secure: jPhFV4GI2/T6nMi4PIPKkuFRkbW1WqR7/DK07RlJOSXLqA1kJ/W3wzpv6D8P1LkJB30CKpgeHVGhWga2tlpmKRAGTuooYL/gXApA/+tD+WN4TB0KsQOUcnAOGBI5+8ivVaokNr/4sBAIoMQ5bOyHutgEX4k8N4eIT9z8tbtjyeU8NNbSUVXTkp2X15FzyBM4AGit2Pe8GpePh0eCfErQ1v3cq2f/slzb3NfaZFxJeB45HOAprYOCDUowhlcYpA3xJI3taZDuOQqR+Mysl5+IuJboXxgxxEX5V2+l0YlMheaUvbnESIWCEGZGr2z1i6dl5RvOn50Wv6MeDN0faJ/IuOXPMjbGSqM8ancwjBeQhiNvvb+76IQBSeHcQKoORjNKnw4WdJvrgXSS9Y2E2z5izV+I7MNNdnXcqgjbUJkI1pYpE0lyGpnCGYdxisNqI7HjrA2caHN5l7lgpMUaHRcjCBnBwWHL+7XUq+YHxwEm0fr/QZ09ZwpH20pnu8t7woas9nns6UFzjpIYB0Gm79g36X4BOnCAJ7QuCvgc1YfoXs+Z1GdLP8hRQSJmBaM7DnKlYOOkTK3sOaFKnKKzYY2jYnSDDzcOhgWeG9H3fEPIidQqjP7Mvcm4Bj953j7wGugRrvzhNfq3v1ZdTzdupiJhoEnO8M183tq3B4WiPYe6BQ8=
+  file: Gerbers/PIN-118_gerbers.zip
+  on:
+    repo: w4xzr/PIN-118
+  skip_cleanup: 'true'
